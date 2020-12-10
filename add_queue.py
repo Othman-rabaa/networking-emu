@@ -1,11 +1,3 @@
-#! /usr/bin/python
-#  coding: utf-8
-
-'''
-Add queues to Mininet using ovs-vsctl and ovs-ofctl
-@Author Ryan Wallner
-'''
-
 import os
 import sys
 import time
