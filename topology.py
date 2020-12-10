@@ -47,7 +47,8 @@ class NetworkSlicingTopo(Topo):
         self.addLink("h4", "s4", **host_link_config)
         self.addLink("h5", "s4", **host_link_config)
         self.addLink("h6", "s4", **host_link_config)
-
+        
+        #deleing the qos and queues to be added by add_queue.py
         os.popen("ovs-vsctl --all destroy qos")
         os.popen("ovs-vsctl --all destroy queue")
 
