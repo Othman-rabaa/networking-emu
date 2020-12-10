@@ -12,7 +12,6 @@ from ryu.lib.packet import icmp
 import threading
 from time import *
 import random
-
 global lock
 global time
 global lock2
@@ -44,7 +43,8 @@ class TrafficSlicing(app_manager.RyuApp):
             while time == 0:
                 lock=0
                 sleep(1)
-
+                
+     #each lock runing in paraller with the rest of the code and it keep runing
     t = threading.Thread(target = locker)
     t.start()
 
@@ -134,7 +134,8 @@ class TrafficSlicing(app_manager.RyuApp):
             datapath=datapath, priority=priority, match=match, instructions=inst
         )
         datapath.send_msg(mod)
-
+        
+        #flow with time out for updateing the states after the lock changes
     def add_flow_timeout(self, datapath, priority, match, actions):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
@@ -164,15 +165,6 @@ class TrafficSlicing(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
-        msg = ev.msg
-        datapath = msg.datapath
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-        in_port = msg.match["in_port"]
-
-        pkt = packet.Packet(msg.data)
-        eth = pkt.get_protocol(ethernet.ethernet)
-
         global time
         global time2
         global lock
@@ -181,6 +173,14 @@ class TrafficSlicing(app_manager.RyuApp):
         global time3
         global lock4
         global time4
+        msg = ev.msg
+        datapath = msg.datapath
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        in_port = msg.match["in_port"]
+
+        pkt = packet.Packet(msg.data)
+        eth = pkt.get_protocol(ethernet.ethernet)
 
         if eth.ethertype == ether_types.ETH_TYPE_LLDP:
             # ignore lldp packet
@@ -192,9 +192,10 @@ class TrafficSlicing(app_manager.RyuApp):
             if dst in self.mac_to_port[dpid]:
                 out_port = self.mac_to_port[dpid][dst]
                 actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
-
+                #checking the port number to select the queue
                 if (pkt.get_protocol(udp.udp) and pkt.get_protocol(udp.udp).dst_port == self.slice_Vport):
                     time=60
+                    #inserting the queue number
                     actions.insert(0,parser.OFPActionSetQueue(2))
 
                 elif (pkt.get_protocol(tcp.tcp) and pkt.get_protocol(tcp.tcp).dst_port == self.slice_FTPport):
@@ -219,6 +220,7 @@ class TrafficSlicing(app_manager.RyuApp):
                 self._send_package(msg, datapath, in_port, actions)
 
             elif (pkt.get_protocol(udp.udp) and pkt.get_protocol(udp.udp).dst_port == self.slice_Vport):
+                #choosing the slice consdring the lock and the protocol
                 time3=60
                 if lock4==1:
                     slice_number = 3
